@@ -1,20 +1,20 @@
-# Mostly based on the code written by Tinghui Zhou: 
+# Mostly based on the code written by Tinghui Zhou:
 # https://github.com/tinghuiz/SfMLearner/blob/master/data/kitti/kitti_raw_loader.py
 from __future__ import division
 import numpy as np
 from glob import glob
+from cv2 import imread, resize
 import os
-import scipy.misc
 
 class kitti_raw_loader(object):
-    def __init__(self, 
+    def __init__(self,
                  dataset_dir,
                  split,
                  img_height=128,
                  img_width=416,
                  seq_length=5,
                  remove_static=True):
-        dir_path = os.path.dirname(os.path.realpath(__file__))        
+        dir_path = os.path.dirname(os.path.realpath(__file__))
         test_scene_file = dir_path + '/test_scenes_' + split + '.txt'
         with open(test_scene_file, 'r') as f:
             test_scenes = f.readlines()
@@ -24,7 +24,7 @@ class kitti_raw_loader(object):
         self.img_width = img_width
         self.seq_length = seq_length
         self.cam_ids = ['02', '03']
-        self.date_list = ['2011_09_26', '2011_09_28', '2011_09_29', 
+        self.date_list = ['2011_09_26', '2011_09_28', '2011_09_29',
                           '2011_09_30', '2011_10_03']
         if remove_static:
             static_frames_file = dir_path + '/static_frames.txt'
@@ -42,7 +42,7 @@ class kitti_raw_loader(object):
             curr_fid = '%.10d' % (np.int(frame_id[:-1]))
             for cid in self.cam_ids:
                 self.static_frames.append(drive + ' ' + cid + ' ' + curr_fid)
-        
+
     def collect_train_frames(self, remove_static):
         all_frames = []
         for date in self.date_list:
@@ -58,7 +58,7 @@ class kitti_raw_loader(object):
                         for n in range(N):
                             frame_id = '%.10d' % n
                             all_frames.append(dr + ' ' + cam + ' ' + frame_id)
-                        
+
         if remove_static:
             for s in self.static_frames:
                 try:
@@ -99,7 +99,7 @@ class kitti_raw_loader(object):
             if o == 0:
                 zoom_y = self.img_height/curr_img.shape[0]
                 zoom_x = self.img_width/curr_img.shape[1]
-            curr_img = scipy.misc.imresize(curr_img, (self.img_height, self.img_width))
+            curr_img = resize(curr_img, (self.img_width, self.img_height))
             image_seq.append(curr_img)
         return image_seq, zoom_x, zoom_y
 
@@ -118,7 +118,7 @@ class kitti_raw_loader(object):
     def load_image_raw(self, drive, cid, frame_id):
         date = drive[:10]
         img_file = os.path.join(self.dataset_dir, date, drive, 'image_' + cid, 'data', frame_id + '.png')
-        img = scipy.misc.imread(img_file)
+        img = imread(img_file)
         return img
 
     def load_intrinsics_raw(self, drive, cid, frame_id):
@@ -153,5 +153,3 @@ class kitti_raw_loader(object):
         out[1,1] *= sy
         out[1,2] *= sy
         return out
-
-

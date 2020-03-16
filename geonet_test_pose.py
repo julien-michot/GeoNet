@@ -1,9 +1,9 @@
 from __future__ import division
 import os
 import math
-import scipy.misc
 import tensorflow as tf
 import numpy as np
+from cv2 import imread, resize
 from glob import glob
 from geonet_model import *
 from kitti_eval.pose_evaluation_utils import dump_pose_seq_TUM
@@ -14,8 +14,8 @@ def test_pose(opt):
         os.makedirs(opt.output_dir)
 
     ##### init #####
-    input_uint8 = tf.placeholder(tf.uint8, [opt.batch_size, 
-        opt.img_height, opt.img_width, opt.seq_length * 3], 
+    input_uint8 = tf.placeholder(tf.uint8, [opt.batch_size,
+        opt.img_height, opt.img_width, opt.seq_length * 3],
         name='raw_input')
     tgt_image = input_uint8[:,:,:,:3]
     src_image_stack = input_uint8[:,:,:,3:]
@@ -23,7 +23,7 @@ def test_pose(opt):
     model = GeoNetModel(opt, tgt_image, src_image_stack, None)
     fetches = { "pose": model.pred_poses }
 
-    saver = tf.train.Saver([var for var in tf.model_variables()]) 
+    saver = tf.train.Saver([var for var in tf.model_variables()])
 
     ##### load test frames #####
     seq_dir = os.path.join(opt.dataset_dir, 'sequences', '%.2d' % opt.pose_test_seq)
@@ -40,7 +40,7 @@ def test_pose(opt):
     max_src_offset = (opt.seq_length - 1) // 2
     with tf.Session() as sess:
         saver.restore(sess, opt.init_ckpt_file)
-        for tgt_idx in range(max_src_offset, N-max_src_offset, opt.batch_size):            
+        for tgt_idx in range(max_src_offset, N-max_src_offset, opt.batch_size):
             if (tgt_idx-max_src_offset) % 100 == 0:
                 print('Progress: %d/%d' % (tgt_idx-max_src_offset, N))
 
@@ -61,23 +61,23 @@ def test_pose(opt):
 
             pred = sess.run(fetches, feed_dict={input_uint8: inputs})
             pred_poses = pred['pose']
-            # Insert the target pose [0, 0, 0, 0, 0, 0] 
+            # Insert the target pose [0, 0, 0, 0, 0, 0]
             pred_poses = np.insert(pred_poses, max_src_offset, np.zeros((1,6)), axis=1)
 
             for b in range(opt.batch_size):
                 idx = tgt_idx + b
                 if idx >=N-max_src_offset:
                     break
-                pred_pose = pred_poses[b]                
+                pred_pose = pred_poses[b]
                 curr_times = times[idx - max_src_offset:idx + max_src_offset + 1]
                 out_file = opt.output_dir + '%.6d.txt' % (idx - max_src_offset)
                 dump_pose_seq_TUM(out_file, pred_pose, curr_times)
 
-def load_image_sequence(dataset_dir, 
-                        frames, 
-                        tgt_idx, 
-                        seq_length, 
-                        img_height, 
+def load_image_sequence(dataset_dir,
+                        frames,
+                        tgt_idx,
+                        seq_length,
+                        img_height,
                         img_width):
     half_offset = int((seq_length - 1)/2)
     for o in range(-half_offset, half_offset+1):
@@ -85,8 +85,8 @@ def load_image_sequence(dataset_dir,
         curr_drive, curr_frame_id = frames[curr_idx].split(' ')
         img_file = os.path.join(
             dataset_dir, 'sequences', '%s/image_2/%s.png' % (curr_drive, curr_frame_id))
-        curr_img = scipy.misc.imread(img_file)
-        curr_img = scipy.misc.imresize(curr_img, (img_height, img_width))
+        curr_img = imread(img_file)
+        curr_img = resize(curr_img, (img_width, img_height))
         if o == -half_offset:
             image_seq = curr_img
         elif o == 0:

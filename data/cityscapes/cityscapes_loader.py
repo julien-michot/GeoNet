@@ -1,19 +1,19 @@
-# Mostly based on the code written by Tinghui Zhou: 
+# Mostly based on the code written by Tinghui Zhou:
 # https://github.com/tinghuiz/SfMLearner/blob/master/data/cityscapes/cityscapes_loader.py
 from __future__ import division
 import json
 import os
 import numpy as np
-import scipy.misc
+from cv2 import imread, resize
 from glob import glob
 
 class cityscapes_loader(object):
-    def __init__(self, 
+    def __init__(self,
                  dataset_dir,
                  split='train',
                  crop_bottom=True, # Get rid of the car logo
                  sample_gap=2,  # Sample every two frames to match KITTI frame rate
-                 img_height=171, 
+                 img_height=171,
                  img_width=416,
                  seq_length=5):
         self.dataset_dir = dataset_dir
@@ -32,7 +32,7 @@ class cityscapes_loader(object):
         else:
             self.num_test = self.num_frames
         print('Total frames collected: %d' % self.num_frames)
-        
+
     def collect_frames(self, split):
         img_dir = self.dataset_dir + '/leftImg8bit_sequence/' + split + '/'
         city_list = os.listdir(img_dir)
@@ -56,7 +56,7 @@ class cityscapes_loader(object):
         camera_file = os.path.join(self.dataset_dir, 'camera',
                                    split, city, city + '_' + seq + '_*_camera.json')
         camera_file = glob(camera_file)[0]
-        with open(camera_file, 'r') as f: 
+        with open(camera_file, 'r') as f:
             camera = json.load(f)
         fx = camera['intrinsic']['fx']
         fy = camera['intrinsic']['fy']
@@ -73,7 +73,7 @@ class cityscapes_loader(object):
         for o in range(-half_offset, half_offset + 1, self.sample_gap):
             curr_local_frame_id = '%.6d' % (int(tgt_local_frame_id) + o)
             curr_frame_id = '%s_%s_%s_' % (city, snippet_id, curr_local_frame_id)
-            curr_image_file = os.path.join(self.dataset_dir, 'leftImg8bit_sequence', 
+            curr_image_file = os.path.join(self.dataset_dir, 'leftImg8bit_sequence',
                                 self.split, city, curr_frame_id + 'leftImg8bit.png')
             if not os.path.exists(curr_image_file):
                 return False
@@ -86,20 +86,20 @@ class cityscapes_loader(object):
         for o in range(-half_offset, half_offset + 1, self.sample_gap):
             curr_local_frame_id = '%.6d' % (int(tgt_local_frame_id) + o)
             curr_frame_id = '%s_%s_%s_' % (city, snippet_id, curr_local_frame_id)
-            curr_image_file = os.path.join(self.dataset_dir, 'leftImg8bit_sequence', 
+            curr_image_file = os.path.join(self.dataset_dir, 'leftImg8bit_sequence',
                                 self.split, city, curr_frame_id + 'leftImg8bit.png')
-            curr_img = scipy.misc.imread(curr_image_file)
+            curr_img = imread(curr_image_file)
             raw_shape = np.copy(curr_img.shape)
             if o == 0:
                 zoom_y = self.img_height/raw_shape[0]
                 zoom_x = self.img_width/raw_shape[1]
-            curr_img = scipy.misc.imresize(curr_img, (self.img_height, self.img_width))
+            curr_img = resize(curr_img, (self.img_width, self.img_height))
             if crop_bottom:
                 ymax = int(curr_img.shape[0] * 0.75)
                 curr_img = curr_img[:ymax]
             image_seq.append(curr_img)
         return image_seq, zoom_x, zoom_y
-    
+
     def load_example(self, tgt_frame_id, load_gt_pose=False):
         image_seq, zoom_x, zoom_y = self.load_image_sequence(tgt_frame_id, self.seq_length, self.crop_bottom)
         intrinsics = self.load_intrinsics(tgt_frame_id, self.split)

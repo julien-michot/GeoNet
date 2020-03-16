@@ -1,7 +1,6 @@
 from __future__ import division
 import os
 import math
-import scipy.misc
 import numpy as np
 import argparse
 from glob import glob
@@ -63,4 +62,3 @@ def main():
         dump_pose_seq_TUM(out_file, pred_poses, curr_times)
 
 main()
-

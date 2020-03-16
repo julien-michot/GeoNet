@@ -1,8 +1,8 @@
-# Mostly based on the code written by Tinghui Zhou: 
+# Mostly based on the code written by Tinghui Zhou:
 # https://github.com/tinghuiz/SfMLearner/blob/master/data/prepare_train_data.py
 from __future__ import division
 import argparse
-import scipy.misc
+from cv2 import imread, resize, imwrite
 import numpy as np
 from glob import glob
 from joblib import Parallel, delayed
@@ -41,13 +41,13 @@ def dump_example(n, args):
     cy = intrinsics[1, 2]
     dump_dir = os.path.join(args.dump_root, example['folder_name'])
 
-    try: 
+    try:
         os.makedirs(dump_dir)
     except OSError:
         if not os.path.isdir(dump_dir):
             raise
     dump_img_file = dump_dir + '/%s.jpg' % example['file_name']
-    scipy.misc.imsave(dump_img_file, image_seq.astype(np.uint8))
+    imwrite(dump_img_file, image_seq.astype(np.uint8))
     dump_cam_file = dump_dir + '/%s_cam.txt' % example['file_name']
     with open(dump_cam_file, 'w') as f:
         f.write('%f,0.,%f,0.,%f,%f,0.,0.,1.' % (fx, cx, fy, cy))
@@ -108,4 +108,3 @@ def main():
                         tf.write('%s %s\n' % (s, frame))
 
 main()
-
